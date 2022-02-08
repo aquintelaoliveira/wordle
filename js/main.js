@@ -10,15 +10,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.getElementById("new-game-button")
         .addEventListener("click", () => {
-            storage.clear();
-            document.location.reload(true);
+            handleNewGame();
         });
-
-    solution = "amote" // getRandomWord();
+    
     createTiles();
     indexKeyboardButtons();
 
-})
+    if(hasGameState()) {
+        loadGameState();
+    } else {
+        solution = getRandomWord();
+    }
+
+});
 
 function createTiles() {
     let id = 1;
@@ -59,11 +63,12 @@ function indexKeyboardButtons() {
 }
 
 function updateGuessedLetter(letter) {
-    if (currentWordArr.length < 5) {
+    if (rowIndex < 6 && currentWordArr.length < 5) {
         currentWordArr.push(letter);
+        console.log(currentTileId)
         const currentTileEl = document.getElementById(String(currentTileId));
         currentTileEl.textContent = letter;
-        currentTileEl.setAttribute("data-state", "tbd")
+        currentTileEl.setAttribute("data-state", "tbd");
         animateCSS(currentTileEl, "pulse");
         currentTileId += 1;
     }
@@ -72,48 +77,52 @@ function updateGuessedLetter(letter) {
 function handleDeleteLetter() {
     if (currentWordArr.length > 0) {
         currentWordArr.pop();
-        const tileEl = document.getElementById(String(currentTileId - 1))
-        tileEl.textContent = ''
-        tileEl.setAttribute("data-state", "empty")
+        const tileEl = document.getElementById(String(currentTileId - 1));
+        tileEl.textContent = '';
+        tileEl.setAttribute("data-state", "empty");
         currentTileId -= 1;
     }
 }
 
 function handleSubmitWord() {
-    if(currentWordArr.length !== 5) {
-        animateCssIncorrectAttempt();
+
+    if (rowIndex === 6) {
+        window.alert(`Sorry, you have no more guesses! The word is ${solution}`);
         return;
     }
 
     const currentWord = currentWordArr.join('');
 
-    updateTileState(currentWordArr, 250)
-    updateKeyboardState(currentWordArr, 250 * 6)
-
-    if (currentWord === solution) {
-        animateCssWinGame(250);
+    if(currentWordArr.length !== 5) {
+        // TODO: non-existing word verification
+        animateCssIncorrectAttempt();
         return;
     }
 
-    if (rowIndex === 6) {
-        window.alert(`Sorry, you have no more guesses! The word is ${solution}`)
+    updateTileState(currentWordArr, 250);
+    updateKeyboardState(currentWordArr, 1500);
+
+    if (currentWord === solution) {
+        animateCssWinGame(2000);
+        return;
     }
 
     boardState[rowIndex++] = currentWord;
     currentWordArr = [];
+    saveGameState();
 }
 
 function getDataState(letter, index) {
 
     const isCorrectLetter = solution.includes(letter);
     if (!isCorrectLetter) {
-      return "absent";
+        return "absent";
     }
 
     const solutionLetterInThatPosition = solution.charAt(index);
     const isCorrectPosition = letter === solutionLetterInThatPosition;
     if (isCorrectPosition) {
-      return "correct";
+        return "correct";
     }
 
     return "present";
@@ -153,19 +162,20 @@ function animateCssIncorrectAttempt() {
 
 function animateCssWinGame(interval) {
     const firstTileId = rowIndex * 5 + 1;
-    console.log(firstTileId)
-    currentWordArr.forEach((letter, index) => {
-        setTimeout(() => {
-            const tileId = firstTileId + index;
-            const tileEl = document.getElementById(tileId);
-            animateCSS(tileEl, "bounce");
-        }, interval * index);
-    });
+    setTimeout(() => {
+        currentWordArr.forEach((item, index) => {
+            setTimeout(() => {
+                const tileId = firstTileId + index;
+                const tileEl = document.getElementById(tileId);
+                animateCSS(tileEl, "bounce");
+            }, 100 * index);
+        });
+    }, interval);
 }
 
 const animateCSS = (element, animation, prefix = 'animate__') => {
     // Create a Promise and return it
-    return new Promise((resolve, reject) => {
+    new Promise((resolve, reject) => {
         const animationName = `${prefix}${animation}`;
         element
 
@@ -178,19 +188,40 @@ const animateCSS = (element, animation, prefix = 'animate__') => {
             resolve('Animation ended');
         }
 
-        element.addEventListener('animationend', handleAnimationEnd, {once: true});
+        element.addEventListener('animationend', handleAnimationEnd, { once: true });
     });
 }
 
-function populateStorage() {
+function handleNewGame() {
+    localStorage.clear();
+    document.location.reload(true);
+}
+
+function saveGameState() {
     localStorage.setItem('gameState', JSON.stringify({
         solution: solution,
         boardState: boardState,
         evaluations: evaluations,
-        rowIndex: rowIndex
+        rowIndex: rowIndex,
     }));
 }
 
+function hasGameState() {
+    return JSON.parse(localStorage.getItem("gameState")) !== null;
+}
+
+function loadGameState() {
+    gameState = JSON.parse(localStorage.getItem("gameState"));
+    if (gameState) {
+        solution = gameState.solution,
+        boardState = gameState.boardState,
+        evaluations = gameState.evaluations,
+        rowIndex = gameState.rowIndex
+        currentTileId = rowIndex * 5 + 1
+    }
+}
+
+// TODO: has to come from wordnik api
 function getRandomWord() {
 
     words = ["ditch", "panic", "chord", "dream", "grief", "swipe", "miner", "cower", "shake", "lunch", "tread", "issue", "index", "scale", "table", "pupil", "break", "jewel", "favor", "smoke", "amuse", "snack", "glass", "sweet", "cheat", "chart", "power", "fairy", "theme", "trade", "frown", "split", "loose", "punch", "drift", "anger", "crown", "crowd", "groan", "habit", "flood"];
