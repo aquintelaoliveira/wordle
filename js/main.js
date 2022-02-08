@@ -1,5 +1,3 @@
-import * as wordnik from './wordnik';
-
 let solution = '';
 let boardState = ["", "", "", "", ""];
 let evaluations = new Array(5).fill(null);
@@ -16,7 +14,7 @@ document.addEventListener("DOMContentLoaded", () => {
             document.location.reload(true);
         });
 
-    solution = wordnik.getRandomWord();
+    solution = "amote" // getRandomWord();
     createTiles();
     indexKeyboardButtons();
 
@@ -167,7 +165,7 @@ function animateCssWinGame(interval) {
 
 const animateCSS = (element, animation, prefix = 'animate__') => {
     // Create a Promise and return it
-    new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
         const animationName = `${prefix}${animation}`;
         element
 
@@ -191,4 +189,11 @@ function populateStorage() {
         evaluations: evaluations,
         rowIndex: rowIndex
     }));
-  }
+}
+
+function getRandomWord() {
+
+    words = ["ditch", "panic", "chord", "dream", "grief", "swipe", "miner", "cower", "shake", "lunch", "tread", "issue", "index", "scale", "table", "pupil", "break", "jewel", "favor", "smoke", "amuse", "snack", "glass", "sweet", "cheat", "chart", "power", "fairy", "theme", "trade", "frown", "split", "loose", "punch", "drift", "anger", "crown", "crowd", "groan", "habit", "flood"];
+
+    return words[Math.floor(Math.random() * (words.length - 1))];
+}
