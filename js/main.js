@@ -1,3 +1,5 @@
+import * as word_repository from './word_repository.js'
+
 let solution = '';
 let boardState = ["", "", "", "", ""];
 let evaluations = new Array(5).fill(null);
@@ -19,11 +21,16 @@ document.addEventListener("DOMContentLoaded", () => {
     if(hasGameState()) {
         loadGameState();
     } else {
-        solution = getRandomWord();
+        solution = word_repository.getRandomWord();
     }
 
 });
 
+/**
+ * Create game tiles elements on DOM.
+ * @param {void}
+ * @return {void}
+ */
 function createTiles() {
     let id = 1;
     const gameBoard = document.getElementById("board");
@@ -41,6 +48,11 @@ function createTiles() {
     }
 }
 
+/**
+ * Sets commands for every key on keyboard.
+ * @param {void}
+ * @return {void}
+ */
 function indexKeyboardButtons() {
     const keys = document.querySelectorAll(".keyboard-row button");
     for (let i = 0; i < keys.length; i++) {
@@ -65,7 +77,6 @@ function indexKeyboardButtons() {
 function updateGuessedLetter(letter) {
     if (rowIndex < 6 && currentWordArr.length < 5) {
         currentWordArr.push(letter);
-        console.log(currentTileId)
         const currentTileEl = document.getElementById(String(currentTileId));
         currentTileEl.textContent = letter;
         currentTileEl.setAttribute("data-state", "tbd");
@@ -94,7 +105,11 @@ function handleSubmitWord() {
     const currentWord = currentWordArr.join('');
 
     if(currentWordArr.length !== 5) {
-        // TODO: non-existing word verification
+        animateCssIncorrectAttempt();
+        return;
+    }
+
+    if (!word_repository.hasWord(currentWord)) {
         animateCssIncorrectAttempt();
         return;
     }
@@ -112,6 +127,14 @@ function handleSubmitWord() {
     saveGameState();
 }
 
+/**
+ * Validates submited letter agains't the solution letter from the same index position.
+ * @param {string} letter - Letter to be validated
+ * @param {int} index - Letter position in word array
+ * @return {string} - "absent"  if there letter doens't exist in solutuion,
+ *                    "present" if the letter exists but it's on the wrong position,
+ *                    "correct" if the letter exists and it's on the correct position
+ */
 function getDataState(letter, index) {
 
     const isCorrectLetter = solution.includes(letter);
@@ -192,11 +215,30 @@ const animateCSS = (element, animation, prefix = 'animate__') => {
     });
 }
 
+/**
+ * Verifies is there is a game state in localStorage.
+ * @param {void}
+ * @return {boolean} True if there is a gameState, False otherwise
+ */
+function hasGameState() {
+    return JSON.parse(localStorage.getItem("gameState")) !== null;
+}
+
+/**
+ * Creates a new game by refreshing page, and clean past game state from localStorage.
+ * @param {void}
+ * @return {void}
+ */
 function handleNewGame() {
     localStorage.clear();
     document.location.reload(true);
 }
 
+/**
+ * Saves current game state to localStorage.
+ * @param {void}
+ * @return {void}
+ */
 function saveGameState() {
     localStorage.setItem('gameState', JSON.stringify({
         solution: solution,
@@ -206,10 +248,11 @@ function saveGameState() {
     }));
 }
 
-function hasGameState() {
-    return JSON.parse(localStorage.getItem("gameState")) !== null;
-}
-
+/**
+ * Loads game state from localStorage, and re-builds game ui.
+ * @param {void}
+ * @return {void}
+ */
 function loadGameState() {
     gameState = JSON.parse(localStorage.getItem("gameState"));
     if (gameState) {
@@ -218,13 +261,14 @@ function loadGameState() {
         evaluations = gameState.evaluations,
         rowIndex = gameState.rowIndex
         currentTileId = rowIndex * 5 + 1
+        // TODO build ui from game state
     }
 }
 
 // TODO: has to come from wordnik api
 function getRandomWord() {
 
-    words = ["ditch", "panic", "chord", "dream", "grief", "swipe", "miner", "cower", "shake", "lunch", "tread", "issue", "index", "scale", "table", "pupil", "break", "jewel", "favor", "smoke", "amuse", "snack", "glass", "sweet", "cheat", "chart", "power", "fairy", "theme", "trade", "frown", "split", "loose", "punch", "drift", "anger", "crown", "crowd", "groan", "habit", "flood"];
+    let words = ["ditch", "panic", "chord", "dream", "grief", "swipe", "miner", "cower", "shake", "lunch", "tread", "issue", "index", "scale", "table", "pupil", "break", "jewel", "favor", "smoke", "amuse", "snack", "glass", "sweet", "cheat", "chart", "power", "fairy", "theme", "trade", "frown", "split", "loose", "punch", "drift", "anger", "crown", "crowd", "groan", "habit", "flood"];
 
     return words[Math.floor(Math.random() * (words.length - 1))];
 }
