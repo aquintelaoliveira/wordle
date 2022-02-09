@@ -14,6 +14,15 @@ document.addEventListener("DOMContentLoaded", () => {
         .addEventListener("click", () => {
             handleNewGame();
         });
+
+    window.addEventListener("resize", () => {
+        var boardContainerEl = document.getElementById("board-container");
+        var a = Math.min(Math.floor(boardContainerEl.clientHeight * (5/6)), 350);
+        var s = 6 * Math.floor(a / 5);
+        var boardEl = document.getElementById("board");
+        boardEl.style.width="".concat(a, "px")
+        boardEl.style.height="".concat(s, "px")
+    })
     
     createTiles();
     indexKeyboardButtons();
@@ -56,8 +65,8 @@ function createTiles() {
 function indexKeyboardButtons() {
     const keys = document.querySelectorAll(".keyboard-row button");
     for (let i = 0; i < keys.length; i++) {
-        keys[i].onclick = ({ target }) => {
-            const letter = target.getAttribute("data-key");
+        keys[i].onclick = () => {
+            const letter = keys[i].getAttribute("data-key");
 
             if (letter ==="enter") {
                 handleSubmitWord();
@@ -69,12 +78,12 @@ function indexKeyboardButtons() {
                 return;
             }
 
-            updateGuessedLetter(letter);
+            handlePressedLetter(letter);
         }
     }
 }
 
-function updateGuessedLetter(letter) {
+function handlePressedLetter(letter) {
     if (rowIndex < 6 && currentWordArr.length < 5) {
         currentWordArr.push(letter);
         const currentTileEl = document.getElementById(String(currentTileId));
@@ -96,6 +105,8 @@ function handleDeleteLetter() {
 }
 
 function handleSubmitWord() {
+
+    indexKeyboardButtons() 
 
     if (rowIndex === 6) {
         window.alert(`Sorry, you have no more guesses! The word is ${solution}`);
@@ -254,7 +265,7 @@ function saveGameState() {
  * @return {void}
  */
 function loadGameState() {
-    gameState = JSON.parse(localStorage.getItem("gameState"));
+    let gameState = JSON.parse(localStorage.getItem("gameState"));
     if (gameState) {
         solution = gameState.solution,
         boardState = gameState.boardState,
