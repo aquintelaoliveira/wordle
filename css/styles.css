@@ -99,6 +99,11 @@ header .title {
     pointer-events: none;
 }
 
+header .title {
+    font-size: 22px;
+    letter-spacing: 0.1rem;
+}
+
 button.icon {
     background: none;
     border: none;
@@ -140,6 +145,7 @@ header #new-game-button {
 }
 
 .tile {
+    width: 100%;
     display: inline-flex;
     justify-content: center;
     align-items: center;
@@ -151,6 +157,19 @@ header #new-game-button {
     color: var(--tile-text-color);
     text-transform: uppercase;
     user-select: none;
+}
+
+.tile::before {
+    content: '';
+    display: inline-block;
+    padding-bottom: 100%;
+}
+
+@media (max-height: 600px) {
+    .tile {
+        font-size: 1em;
+        line-height: 1em;
+    }
 }
 
 .tile[data-state='empty'] {

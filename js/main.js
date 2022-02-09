@@ -1,10 +1,11 @@
-import * as word_repository from './word_repository.js'
+import * as word_repository from './word_repository.js';
 
+// game state to be saved
 let solution = '';
 let boardState = ["", "", "", "", ""];
-let evaluations = new Array(5).fill(null);
 let rowIndex = 0;
 
+// on going game state
 let currentTileId = 1;
 let currentWordArr = [];
 
@@ -16,12 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
     window.addEventListener("resize", () => {
-        var boardContainerEl = document.getElementById("board-container");
-        var a = Math.min(Math.floor(boardContainerEl.clientHeight * (5/6)), 350);
-        var s = 6 * Math.floor(a / 5);
-        var boardEl = document.getElementById("board");
-        boardEl.style.width="".concat(a, "px")
-        boardEl.style.height="".concat(s, "px")
+        handleBoardResize();
     })
     
     createTiles();
@@ -36,7 +32,21 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 /**
- * Create game tiles elements on DOM.
+ * Resizes tile board so that width will be 5/6 ratio of height.
+ * @param {void}
+ * @return {void}
+ */
+function handleBoardResize() {
+    var boardContainerEl = document.getElementById("board-container");
+    var w = Math.min(Math.floor(boardContainerEl.clientHeight * (5/6)), 350);
+    var h = 6 * Math.floor(w / 5);
+    var boardEl = document.getElementById("board");
+    boardEl.style.width="".concat(w, "px")
+    boardEl.style.height="".concat(h, "px")
+}
+
+/**
+ * Create row and tiles elements on DOM.
  * @param {void}
  * @return {void}
  */
@@ -44,6 +54,7 @@ function createTiles() {
     let id = 1;
     const gameBoard = document.getElementById("board");
     for (let i = 0; i < 6; i++) {
+        let game_row = document.createElement("game-row");
         let row = document.createElement("div");
         row.classList.add("row");
         for (let j = 0; j < 5; j++) {
@@ -51,14 +62,15 @@ function createTiles() {
             tile.setAttribute("id", id++);
             tile.classList.add("tile");
             tile.setAttribute("data-state", "empty");
-            row.appendChild(tile)
+            row.appendChild(tile);
+            game_row.appendChild(row);
         }
-        gameBoard.appendChild(row);
+        gameBoard.appendChild(game_row);
     }
 }
 
 /**
- * Sets commands for every key on keyboard.
+ * Sets behavior for every key on keyboard.
  * @param {void}
  * @return {void}
  */
@@ -83,6 +95,13 @@ function indexKeyboardButtons() {
     }
 }
 
+/**
+ * Sets tile behavior when a letter key is pressed.
+ * Updates tile element textContent and data-state atribute.
+ * Animates tile element.
+ * @param {string} letter - Tile letter.
+ * @return {void}
+ */
 function handlePressedLetter(letter) {
     if (rowIndex < 6 && currentWordArr.length < 5) {
         currentWordArr.push(letter);
@@ -94,6 +113,11 @@ function handlePressedLetter(letter) {
     }
 }
 
+/**
+ * Deletes information from last tile.
+ * @param {void}
+ * @return {void}
+ */
 function handleDeleteLetter() {
     if (currentWordArr.length > 0) {
         currentWordArr.pop();
@@ -104,9 +128,14 @@ function handleDeleteLetter() {
     }
 }
 
+/**
+ * Sets tile behavior when a letter key is pressed.
+ * Updates tile element textContent and data-state atribute.
+ * Animates tile element.
+ * @param {string} letter - Tile letter.
+ * @return {void}
+ */
 function handleSubmitWord() {
-
-    indexKeyboardButtons() 
 
     if (rowIndex === 6) {
         window.alert(`Sorry, you have no more guesses! The word is ${solution}`);
@@ -125,7 +154,7 @@ function handleSubmitWord() {
         return;
     }
 
-    updateTileState(currentWordArr, 250);
+    updateRowTilesState(currentWordArr, rowIndex, 250);
     updateKeyboardState(currentWordArr, 1500);
 
     if (currentWord === solution) {
@@ -162,12 +191,20 @@ function getDataState(letter, index) {
     return "present";
 }
 
-function updateTileState(currentWordArr, interval) {
-    const firstTileId = rowIndex * 5 + 1;
-    currentWordArr.forEach((letter, index) => {
+/**
+ * Updates row tiles state.
+ * Color keyboard keys based on last letter evaluation. 
+ * @param {Array} wordArr - Array of letters
+ * @param {int} rowIndex - Tile row index to be updated
+ * @param {int} interval - Time in milliseconds that function will wait before execution
+ * @return {void}
+ */
+function updateRowTilesState(wordArr, rowIndex, interval) {
+    const firstRowTileId = rowIndex * 5 + 1;
+    wordArr.forEach((letter, index) => {
         setTimeout(() => {
             const dataState = getDataState(letter, index);
-            const tileId = firstTileId + index;
+            const tileId = firstRowTileId + index;
             const tileEl = document.getElementById(tileId);
             tileEl.setAttribute("data-state", dataState);
             animateCSS(tileEl, "flipInX");
@@ -175,9 +212,16 @@ function updateTileState(currentWordArr, interval) {
     });
 }
 
-function updateKeyboardState(currentWordArr, interval) {
+/**
+ * Updates keyboard state.
+ * Color keyboard keys based on last letter evaluation. 
+ * @param {Array} wordArr - Array of letters
+ * @param {int} interval - Time in milliseconds that function will wait before execution
+ * @return {boolean} True if there is a gameState, False otherwise
+ */
+function updateKeyboardState(wordArr, interval) {
     setTimeout(() => {
-        currentWordArr.forEach((letter, index) => {
+        wordArr.forEach((letter, index) => {
             const dataState = getDataState(letter, index);
             const keyEl = document.querySelector(`[data-key=${letter}]`);
             keyEl.setAttribute("data-state", dataState)
@@ -185,21 +229,31 @@ function updateKeyboardState(currentWordArr, interval) {
     }, interval);
 }
 
+/**
+ * Animates tiles on incorrect word submission attempt.
+ * @param {void}
+ * @return {void}
+ */
 function animateCssIncorrectAttempt() {
-    const firstTileId = rowIndex * 5 + 1;
+    const firstRowTileId = rowIndex * 5 + 1;
     currentWordArr.forEach((item, index) => {
-        const tileId = firstTileId + index;
+        const tileId = firstRowTileId + index;
         const tileEl = document.getElementById(tileId);
         animateCSS(tileEl, "headShake");
     });
 }
 
+/**
+ * Animates tiles on win condition.
+ * @param {int} interval - Time in milliseconds that function will wait before execution
+ * @return {void}
+ */
 function animateCssWinGame(interval) {
-    const firstTileId = rowIndex * 5 + 1;
+    const firstRowTileId = rowIndex * 5 + 1;
     setTimeout(() => {
         currentWordArr.forEach((item, index) => {
             setTimeout(() => {
-                const tileId = firstTileId + index;
+                const tileId = firstRowTileId + index;
                 const tileEl = document.getElementById(tileId);
                 animateCSS(tileEl, "bounce");
             }, 100 * index);
@@ -207,6 +261,15 @@ function animateCssWinGame(interval) {
     }, interval);
 }
 
+/**
+ * Animates DOM element with css animation from Animate.css code.
+ * Adds animation name to element class, and once it is done removes it
+ * https://animate.style/
+ * @param {element} - DOM element to be animated
+ * @param {animation} - animation name
+ * @param {string} prefix - animation name prefix
+ * @return {void}
+ */
 const animateCSS = (element, animation, prefix = 'animate__') => {
     // Create a Promise and return it
     new Promise((resolve, reject) => {
@@ -254,7 +317,6 @@ function saveGameState() {
     localStorage.setItem('gameState', JSON.stringify({
         solution: solution,
         boardState: boardState,
-        evaluations: evaluations,
         rowIndex: rowIndex,
     }));
 }
@@ -269,17 +331,28 @@ function loadGameState() {
     if (gameState) {
         solution = gameState.solution,
         boardState = gameState.boardState,
-        evaluations = gameState.evaluations,
         rowIndex = gameState.rowIndex
-        currentTileId = rowIndex * 5 + 1
-        // TODO build ui from game state
+        rebuildUi(boardState);
     }
 }
 
-// TODO: has to come from wordnik api
-function getRandomWord() {
-
-    let words = ["ditch", "panic", "chord", "dream", "grief", "swipe", "miner", "cower", "shake", "lunch", "tread", "issue", "index", "scale", "table", "pupil", "break", "jewel", "favor", "smoke", "amuse", "snack", "glass", "sweet", "cheat", "chart", "power", "fairy", "theme", "trade", "frown", "split", "loose", "punch", "drift", "anger", "crown", "crowd", "groan", "habit", "flood"];
-
-    return words[Math.floor(Math.random() * (words.length - 1))];
+/**
+ * Re-builds tiles and keyboard ui using boardState object from localStorage.
+ * @param {object} boardState - Array with all submited words.
+ * @return {void}
+ */
+function rebuildUi(boardState) {
+    currentTileId = 1;
+    boardState.forEach((row, rowIndex) => {
+        let rowArr = row.split('');
+        if(rowArr.length === 0) {
+            return;
+        }
+        rowArr.forEach((letter, index) => {
+            const currentTileEl = document.getElementById(String(currentTileId++));
+            currentTileEl.textContent = letter;
+        });
+        updateRowTilesState(rowArr, rowIndex, 0);
+        updateKeyboardState(rowArr, 0);
+    });
 }
