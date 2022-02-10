@@ -1,19 +1,23 @@
 import * as word_repository from './word_repository.js';
 
 // game state to be saved
-let solution = '';
-let boardState = ["", "", "", "", ""];
-let rowIndex = 0;
+var solution = '';
+var boardState = ["", "", "", "", ""];
+var rowIndex = 0;
 
 // on going game state
-let currentTileId = 1;
-let currentWordArr = [];
+var currentTileId = 1;
+var currentWordArr = [];
 
 document.addEventListener("DOMContentLoaded", () => {
 
     document.getElementById("new-game-button")
         .addEventListener("click", () => {
             handleNewGame();
+        });
+
+    document.getElementById("settings-button")
+        .addEventListener("click", () => {
         });
 
     window.addEventListener("resize", () => {
@@ -37,10 +41,10 @@ document.addEventListener("DOMContentLoaded", () => {
  * @return {void}
  */
 function handleBoardResize() {
-    var boardContainerEl = document.getElementById("board-container");
-    var w = Math.min(Math.floor(boardContainerEl.clientHeight * (5/6)), 350);
-    var h = 6 * Math.floor(w / 5);
-    var boardEl = document.getElementById("board");
+    let boardContainerEl = document.getElementById("board-container");
+    let w = Math.min(Math.floor(boardContainerEl.clientHeight * (5/6)), 350);
+    let h = 6 * Math.floor(w / 5);
+    let boardEl = document.getElementById("board");
     boardEl.style.width="".concat(w, "px")
     boardEl.style.height="".concat(h, "px")
 }
@@ -146,11 +150,13 @@ function handleSubmitWord() {
 
     if(currentWordArr.length !== 5) {
         animateCssIncorrectAttempt();
+        handleToast("game", "Not enough letters", 500);
         return;
     }
 
     if (!word_repository.hasWord(currentWord)) {
         animateCssIncorrectAttempt();
+        handleToast("game", "Not in word list", 500);
         return;
     }
 
@@ -272,7 +278,7 @@ function animateCssWinGame(interval) {
  */
 const animateCSS = (element, animation, prefix = 'animate__') => {
     // Create a Promise and return it
-    new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
         const animationName = `${prefix}${animation}`;
         element
 
@@ -287,6 +293,27 @@ const animateCSS = (element, animation, prefix = 'animate__') => {
 
         element.addEventListener('animationend', handleAnimationEnd, { once: true });
     });
+}
+
+/**
+ * Creates, displays and then removes toast element DOM.
+ * Adds animation name to element class, and once it is done removes it
+ * @param {string} - Element type (system or game)
+ * @param {string} - Message to be displayed in toast element
+ * @param {int} prefix - Time in milliseconds that function will wait before execution
+ * @return {void}
+ */
+function handleToast(type, message, interval) {
+    const toasterEl = document.getElementById(`${type}-toaster`);
+    const toastEl = document.createElement(`${type}-toast`);
+    toastEl.innerText = message;
+    toasterEl.appendChild(toastEl);
+    setTimeout(() =>{
+        animateCSS(toastEl, "fadeOut")
+        .then(() => {
+            toasterEl.removeChild(toasterEl.lastChild);
+        })
+    }, interval);
 }
 
 /**

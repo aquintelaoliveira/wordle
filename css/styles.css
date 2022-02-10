@@ -251,6 +251,55 @@ button[data-state='correct'] {
     --animate-duration: 0.50s;
 }
 
+
+
+.overlay {
+    display: flex;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    justify-content: center;
+    align-items: center;
+    background-color: var(--opacity-50);
+    z-index: 3000;
+ }
+
+.content {
+    position: relative;
+    border-radius: 8px;
+    border: 1px solid var(--color-tone-6);
+    background-color: var(--modal-content-bg);
+    color: var(--color-tone-1);
+    box-shadow: 0 4px 23px 0 rgba(0, 0, 0, 0.2);
+    width: 90%;
+    max-height: 90%;
+    overflow-y: auto;
+    animation: SlideIn 200ms;
+    max-width: var(--game-max-width);
+    padding: 16px;
+    box-sizing: border-box;
+}
+
+.content.closing {
+    animation: SlideOut 200ms;
+}
+
+.close-icon {
+    width: 24px;
+    height: 24px;
+    position: absolute;
+    top: 16px;
+    right: 16px;
+}
+
+game-icon {
+    position: fixed;
+    user-select: none;
+    cursor: pointer;
+}
+
 #game-toaster {
     z-index: 1000;
 }
@@ -262,4 +311,11 @@ button[data-state='correct'] {
     transform: translate(-50%, 0);
     pointer-events: none;
     width: fit-content;
+}
+
+game-toast {
+    font-weight: bold;
+    background-color: var(--color-tone-1);
+    padding: 15px;
+    border-radius: 5px;
 }
