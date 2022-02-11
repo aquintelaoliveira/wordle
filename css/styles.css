@@ -300,6 +300,10 @@ game-icon {
     cursor: pointer;
 }
 
+#system-toaster {
+    z-index: 2000;
+}
+
 #game-toaster {
     z-index: 1000;
 }

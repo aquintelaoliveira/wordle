@@ -6,7 +6,7 @@ var boardState = ["", "", "", "", ""];
 var rowIndex = 0;
 
 // on going game state
-var currentTileId = 1;
+var currentTileChild = 0;
 var currentWordArr = [];
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -55,21 +55,19 @@ function handleBoardResize() {
  * @return {void}
  */
 function createTiles() {
-    let id = 1;
     const gameBoard = document.getElementById("board");
     for (let i = 0; i < 6; i++) {
-        let game_row = document.createElement("game-row");
-        let row = document.createElement("div");
-        row.classList.add("row");
+        let gameRowEl = document.createElement("game-row");
+        let rowEl = document.createElement("div");
+        rowEl.classList.add("row");
         for (let j = 0; j < 5; j++) {
-            let tile = document.createElement("div");
-            tile.setAttribute("id", id++);
-            tile.classList.add("tile");
-            tile.setAttribute("data-state", "empty");
-            row.appendChild(tile);
-            game_row.appendChild(row);
+            let tileEl = document.createElement("div");
+            tileEl.classList.add("tile");
+            tileEl.setAttribute("data-state", "empty");
+            rowEl.appendChild(tileEl);
+            gameRowEl.appendChild(rowEl);
         }
-        gameBoard.appendChild(game_row);
+        gameBoard.appendChild(gameRowEl);
     }
 }
 
@@ -109,11 +107,11 @@ function indexKeyboardButtons() {
 function handlePressedLetter(letter) {
     if (rowIndex < 6 && currentWordArr.length < 5) {
         currentWordArr.push(letter);
-        const currentTileEl = document.getElementById(String(currentTileId));
+        const currentTileEl = document.querySelectorAll(".row")[rowIndex].childNodes[currentTileChild];
         currentTileEl.textContent = letter;
         currentTileEl.setAttribute("data-state", "tbd");
         animateCSS(currentTileEl, "pulse");
-        currentTileId += 1;
+        currentTileChild += 1;
     }
 }
 
@@ -125,10 +123,10 @@ function handlePressedLetter(letter) {
 function handleDeleteLetter() {
     if (currentWordArr.length > 0) {
         currentWordArr.pop();
-        const tileEl = document.getElementById(String(currentTileId - 1));
+        const tileEl = document.querySelectorAll(".row")[rowIndex].childNodes[currentTileChild - 1];
         tileEl.textContent = '';
         tileEl.setAttribute("data-state", "empty");
-        currentTileId -= 1;
+        currentTileChild -= 1;
     }
 }
 
@@ -142,7 +140,7 @@ function handleDeleteLetter() {
 function handleSubmitWord() {
 
     if (rowIndex === 6) {
-        window.alert(`Sorry, you have no more guesses! The word is ${solution}`);
+        handleToast("game", `Sorry, you have no more guesses! The word is ${solution}`, 1000);
         return;
     }
 
@@ -169,19 +167,21 @@ function handleSubmitWord() {
     }
 
     boardState[rowIndex++] = currentWord;
+    currentTileChild = 0;
     currentWordArr = [];
     saveGameState();
+
 }
 
 /**
- * Validates submited letter agains't the solution letter from the same index position.
+ * Evaluate submited letter agains't the solution letter from the same index position.
  * @param {string} letter - Letter to be validated
  * @param {int} index - Letter position in word array
  * @return {string} - "absent"  if there letter doens't exist in solutuion,
  *                    "present" if the letter exists but it's on the wrong position,
  *                    "correct" if the letter exists and it's on the correct position
  */
-function getDataState(letter, index) {
+function evaluate(letter, index) {
 
     const isCorrectLetter = solution.includes(letter);
     if (!isCorrectLetter) {
@@ -206,12 +206,11 @@ function getDataState(letter, index) {
  * @return {void}
  */
 function updateRowTilesState(wordArr, rowIndex, interval) {
-    const firstRowTileId = rowIndex * 5 + 1;
+    let rowEl = document.querySelectorAll(".row")[rowIndex];
     wordArr.forEach((letter, index) => {
         setTimeout(() => {
-            const dataState = getDataState(letter, index);
-            const tileId = firstRowTileId + index;
-            const tileEl = document.getElementById(tileId);
+            const dataState = evaluate(letter, index);
+            const tileEl = rowEl.childNodes[index];
             tileEl.setAttribute("data-state", dataState);
             animateCSS(tileEl, "flipInX");
         }, interval * index);
@@ -228,7 +227,7 @@ function updateRowTilesState(wordArr, rowIndex, interval) {
 function updateKeyboardState(wordArr, interval) {
     setTimeout(() => {
         wordArr.forEach((letter, index) => {
-            const dataState = getDataState(letter, index);
+            const dataState = evaluate(letter, index);
             const keyEl = document.querySelector(`[data-key=${letter}]`);
             keyEl.setAttribute("data-state", dataState)
         });
@@ -241,10 +240,9 @@ function updateKeyboardState(wordArr, interval) {
  * @return {void}
  */
 function animateCssIncorrectAttempt() {
-    const firstRowTileId = rowIndex * 5 + 1;
+    let rowEl = document.querySelectorAll(".row")[rowIndex];
     currentWordArr.forEach((item, index) => {
-        const tileId = firstRowTileId + index;
-        const tileEl = document.getElementById(tileId);
+        const tileEl = rowEl.childNodes[index];
         animateCSS(tileEl, "headShake");
     });
 }
@@ -255,12 +253,11 @@ function animateCssIncorrectAttempt() {
  * @return {void}
  */
 function animateCssWinGame(interval) {
-    const firstRowTileId = rowIndex * 5 + 1;
+    let rowEl = document.querySelectorAll(".row")[rowIndex];
     setTimeout(() => {
         currentWordArr.forEach((item, index) => {
             setTimeout(() => {
-                const tileId = firstRowTileId + index;
-                const tileEl = document.getElementById(tileId);
+                const tileEl = rowEl.childNodes[index];
                 animateCSS(tileEl, "bounce");
             }, 100 * index);
         });
@@ -284,7 +281,7 @@ const animateCSS = (element, animation, prefix = 'animate__') => {
 
         element.classList.add(`${prefix}animated`, animationName);
 
-        // When the animation ends, we clean the classes and resolve the Promise
+        // When the animation ends, clean the classes and resolve the Promise
         function handleAnimationEnd(event) {
             event.stopPropagation();
             element.classList.remove(`${prefix}animated`, animationName);
@@ -305,15 +302,17 @@ const animateCSS = (element, animation, prefix = 'animate__') => {
  */
 function handleToast(type, message, interval) {
     const toasterEl = document.getElementById(`${type}-toaster`);
-    const toastEl = document.createElement(`${type}-toast`);
-    toastEl.innerText = message;
-    toasterEl.appendChild(toastEl);
-    setTimeout(() =>{
-        animateCSS(toastEl, "fadeOut")
-        .then(() => {
-            toasterEl.removeChild(toasterEl.lastChild);
-        })
-    }, interval);
+    if (toasterEl.childNodes.length === 0) {
+        const toastEl = document.createElement(`${type}-toast`);
+        toastEl.innerText = message;
+        toasterEl.appendChild(toastEl);
+        setTimeout(() =>{
+            animateCSS(toastEl, "fadeOut")
+            .then(() => {
+                toasterEl.removeChild(toasterEl.lastChild);
+            })
+        }, interval);
+    }
 }
 
 /**
@@ -369,15 +368,14 @@ function loadGameState() {
  * @return {void}
  */
 function rebuildUi(boardState) {
-    currentTileId = 1;
     boardState.forEach((row, rowIndex) => {
         let rowArr = row.split('');
         if(rowArr.length === 0) {
             return;
         }
         rowArr.forEach((letter, index) => {
-            const currentTileEl = document.getElementById(String(currentTileId++));
-            currentTileEl.textContent = letter;
+            const tileEl = document.querySelectorAll(".row")[rowIndex].childNodes[index];
+            tileEl.textContent = letter;
         });
         updateRowTilesState(rowArr, rowIndex, 0);
         updateKeyboardState(rowArr, 0);
