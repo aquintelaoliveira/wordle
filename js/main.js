@@ -43,7 +43,7 @@ document.addEventListener("DOMContentLoaded", () => {
 function handleBoardResize() {
     let boardContainerEl = document.getElementById("board-container");
     let w = Math.min(Math.floor(boardContainerEl.clientHeight * (5/6)), 350);
-    let h = 6 * Math.floor(w / 5);
+    let h = 6 * Math.floor(w/5);
     let boardEl = document.getElementById("board");
     boardEl.style.width="".concat(w, "px")
     boardEl.style.height="".concat(h, "px")
@@ -101,7 +101,7 @@ function indexKeyboardButtons() {
  * Sets tile behavior when a letter key is pressed.
  * Updates tile element textContent and data-state atribute.
  * Animates tile element.
- * @param {string} letter - Tile letter.
+ * @param {string} letter - Tile letter
  * @return {void}
  */
 function handlePressedLetter(letter) {
@@ -134,7 +134,7 @@ function handleDeleteLetter() {
  * Sets tile behavior when a letter key is pressed.
  * Updates tile element textContent and data-state atribute.
  * Animates tile element.
- * @param {string} letter - Tile letter.
+ * @param {string} letter - Tile letter
  * @return {void}
  */
 function handleSubmitWord() {
@@ -177,24 +177,28 @@ function handleSubmitWord() {
  * Evaluate submited letter agains't the solution letter from the same index position.
  * @param {string} letter - Letter to be validated
  * @param {int} index - Letter position in word array
+ * @param {Array} wasCompared - Boolean array, where true values, means the solution letter has already been compared
  * @return {string} - "absent"  if there letter doens't exist in solutuion,
  *                    "present" if the letter exists but it's on the wrong position,
  *                    "correct" if the letter exists and it's on the correct position
  */
-function evaluate(letter, index) {
-
-    const isCorrectLetter = solution.includes(letter);
-    if (!isCorrectLetter) {
-        return "absent";
-    }
-
-    const solutionLetterInThatPosition = solution.charAt(index);
-    const isCorrectPosition = letter === solutionLetterInThatPosition;
+ function evaluate(letter, index, wasCompared) {
+    const isCorrectPosition = letter === solution.charAt(index);
     if (isCorrectPosition) {
+        wasCompared[index] = true;
         return "correct";
     }
 
-    return "present";
+    let letterIndexInSolution = solution.indexOf(letter);
+    while (letterIndexInSolution !== -1) {
+        if (!wasCompared[letterIndexInSolution]) {
+            wasCompared[letterIndexInSolution] = true;
+            return "present";
+        }
+        letterIndexInSolution = solution.indexOf(letter, letterIndexInSolution + 1);
+    }
+
+    return "absent";
 }
 
 /**
@@ -207,9 +211,10 @@ function evaluate(letter, index) {
  */
 function updateRowTilesState(wordArr, rowIndex, interval) {
     let rowEl = document.querySelectorAll(".row")[rowIndex];
+    let wasCompared = new Array(5).fill(false);
     wordArr.forEach((letter, index) => {
         setTimeout(() => {
-            const dataState = evaluate(letter, index);
+            const dataState = evaluate(letter, index, wasCompared);
             const tileEl = rowEl.childNodes[index];
             tileEl.setAttribute("data-state", dataState);
             animateCSS(tileEl, "flipInX");
@@ -225,9 +230,10 @@ function updateRowTilesState(wordArr, rowIndex, interval) {
  * @return {boolean} True if there is a gameState, False otherwise
  */
 function updateKeyboardState(wordArr, interval) {
+    let wasCompared = new Array(5).fill(false);
     setTimeout(() => {
         wordArr.forEach((letter, index) => {
-            const dataState = evaluate(letter, index);
+            const dataState = evaluate(letter, index, wasCompared);
             const keyEl = document.querySelector(`[data-key=${letter}]`);
             keyEl.setAttribute("data-state", dataState)
         });
@@ -253,7 +259,7 @@ function animateCssIncorrectAttempt() {
  * @return {void}
  */
 function animateCssWinGame(interval) {
-    let rowEl = document.querySelectorAll(".row")[rowIndex];
+    const rowEl = document.querySelectorAll(".row")[rowIndex];
     setTimeout(() => {
         currentWordArr.forEach((item, index) => {
             setTimeout(() => {
