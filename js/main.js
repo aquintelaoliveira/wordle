@@ -1,8 +1,17 @@
 import * as word_repository from './word_repository.js';
 
+// game status
+const GAME_STATUS = Object.freeze({
+    IN_PROGRESS: "IN_PROGRESS",
+    WIN: "WIN",
+    LOST: "LOST",
+  });
+
 // game state to be saved
-var solution = '';
+var gameStatus = GAME_STATUS.IN_PROGRESS;
+var solution = "";
 var boardState = ["", "", "", "", ""];
+var evaluations = new Array(5).fill(null);
 var rowIndex = 0;
 
 // on going game state
@@ -24,7 +33,7 @@ document.addEventListener("DOMContentLoaded", () => {
         handleBoardResize();
     })
     
-    createTiles();
+    createBoard();
     indexKeyboardButtons();
 
     if(hasGameState()) {
@@ -41,10 +50,10 @@ document.addEventListener("DOMContentLoaded", () => {
  * @return {void}
  */
 function handleBoardResize() {
-    let boardContainerEl = document.getElementById("board-container");
-    let w = Math.min(Math.floor(boardContainerEl.clientHeight * (5/6)), 350);
-    let h = 6 * Math.floor(w/5);
-    let boardEl = document.getElementById("board");
+    const boardContainerEl = document.getElementById("board-container");
+    const w = Math.min(Math.floor(boardContainerEl.clientHeight * (5/6)), 350);
+    const h = 6 * Math.floor(w/5);
+    const boardEl = document.getElementById("board");
     boardEl.style.width="".concat(w, "px")
     boardEl.style.height="".concat(h, "px")
 }
@@ -54,8 +63,10 @@ function handleBoardResize() {
  * @param {void}
  * @return {void}
  */
-function createTiles() {
-    const gameBoard = document.getElementById("board");
+function createBoard() {
+    const boardContainerEl = document.getElementById("board-container");
+    const boardEl = document.createElement("div");
+    boardEl.setAttribute("id", "board");
     for (let i = 0; i < 6; i++) {
         let gameRowEl = document.createElement("game-row");
         let rowEl = document.createElement("div");
@@ -67,8 +78,10 @@ function createTiles() {
             rowEl.appendChild(tileEl);
             gameRowEl.appendChild(rowEl);
         }
-        gameBoard.appendChild(gameRowEl);
+        boardEl.appendChild(gameRowEl);
     }
+    boardContainerEl.appendChild(boardEl);
+    handleBoardResize();
 }
 
 /**
@@ -105,7 +118,7 @@ function indexKeyboardButtons() {
  * @return {void}
  */
 function handlePressedLetter(letter) {
-    if (rowIndex < 6 && currentWordArr.length < 5) {
+    if (gameStatus === GAME_STATUS.IN_PROGRESS && currentWordArr.length < 5) {
         currentWordArr.push(letter);
         const currentTileEl = document.querySelectorAll(".row")[rowIndex].childNodes[currentTileChild];
         currentTileEl.textContent = letter;
@@ -139,38 +152,49 @@ function handleDeleteLetter() {
  */
 function handleSubmitWord() {
 
-    if (rowIndex === 6) {
-        handleToast("game", `Sorry, you have no more guesses! The word is ${solution}`, 1000);
+    if(gameStatus === GAME_STATUS.WIN) {
+        return;
+    }
+
+    if (gameStatus === GAME_STATUS.LOST) {
+        handleToast("game", `Sorry, you have no more guesses! The word was: ${solution.toUpperCase()}`, 2000);
+        return;
+    }
+
+    if(currentWordArr.length !== 5) {
+        animateCssIncorrectAttempt(rowIndex);
+        handleToast("game", "Not enough letters", 500);
         return;
     }
 
     const currentWord = currentWordArr.join('');
 
-    if(currentWordArr.length !== 5) {
-        animateCssIncorrectAttempt();
-        handleToast("game", "Not enough letters", 500);
-        return;
-    }
-
     if (!word_repository.hasWord(currentWord)) {
-        animateCssIncorrectAttempt();
+        animateCssIncorrectAttempt(rowIndex);
         handleToast("game", "Not in word list", 500);
         return;
     }
 
-    updateRowTilesState(currentWordArr, rowIndex, 250);
-    updateKeyboardState(currentWordArr, 1500);
+    const wordEvaluation = evaluate(currentWordArr);
+    updateRowState(wordEvaluation, rowIndex, 250);
+    updateKeyboardState(currentWordArr, wordEvaluation, 1500);
 
     if (currentWord === solution) {
-        animateCssWinGame(2000);
-        return;
+        animateCssWinGame(rowIndex, 2000);
+        gameStatus = GAME_STATUS.WIN;
     }
 
-    boardState[rowIndex++] = currentWord;
+    if (rowIndex === 6) {
+        gameStatus = GAME_STATUS.LOST;
+    }
+
+    boardState[rowIndex] = currentWord;
+    evaluations[rowIndex] = wordEvaluation;
     currentTileChild = 0;
     currentWordArr = [];
-    saveGameState();
+    rowIndex = gameStatus === GAME_STATUS.IN_PROGRESS ? rowIndex + 1 : rowIndex;
 
+    saveGameState();
 }
 
 /**
@@ -178,45 +202,52 @@ function handleSubmitWord() {
  * @param {string} letter - Letter to be validated
  * @param {int} index - Letter position in word array
  * @param {Array} wasCompared - Boolean array, where true values, means the solution letter has already been compared
- * @return {string} - "absent"  if there letter doens't exist in solutuion,
- *                    "present" if the letter exists but it's on the wrong position,
- *                    "correct" if the letter exists and it's on the correct position
+ * @return {Array} - An array of strings with the word letters evaluation:
+ *                   "absent"  if there letter doens't exist in solutuion,
+ *                   "present" if the letter exists but it's on the wrong position,
+ *                   "correct" if the letter exists and it's on the correct position
  */
- function evaluate(letter, index, wasCompared) {
-    const isCorrectPosition = letter === solution.charAt(index);
-    if (isCorrectPosition) {
-        wasCompared[index] = true;
-        return "correct";
-    }
+function evaluate(wordArr) {
+    let wordEvaluation = new Array(5).fill("absent");;
+    let wasCompared = new Array(5).fill(false);
 
-    let letterIndexInSolution = solution.indexOf(letter);
-    while (letterIndexInSolution !== -1) {
-        if (!wasCompared[letterIndexInSolution]) {
-            wasCompared[letterIndexInSolution] = true;
-            return "present";
+    wordArr.forEach((letter, index) => {
+        const isCorrectPosition = letter === solution.charAt(index);
+        if (isCorrectPosition) {
+            wasCompared[index] = true;
+            wordEvaluation[index] = "correct";
+            return;
         }
-        letterIndexInSolution = solution.indexOf(letter, letterIndexInSolution + 1);
-    }
+    
+        let letterIndexInSolution = solution.indexOf(letter);
+        while (letterIndexInSolution !== -1) {
+            console.log("index", letterIndexInSolution, wasCompared[letterIndexInSolution])
+            if (!wasCompared[letterIndexInSolution]) {
+                console.log("index", "entered", letterIndexInSolution)
+                wasCompared[letterIndexInSolution] = true;
+                wordEvaluation[index] = "present";
+            }
+            letterIndexInSolution = solution.indexOf(letter, letterIndexInSolution + 1);
+        }
+    });
 
-    return "absent";
+    return wordEvaluation;
 }
 
 /**
  * Updates row tiles state.
  * Color keyboard keys based on last letter evaluation. 
- * @param {Array} wordArr - Array of letters
+ * @param {Array} rowEvaluation - Array with word letters evaluation
  * @param {int} rowIndex - Tile row index to be updated
  * @param {int} interval - Time in milliseconds that function will wait before execution
  * @return {void}
  */
-function updateRowTilesState(wordArr, rowIndex, interval) {
+function updateRowState(rowEvaluation, rowIndex, interval) {
     let rowEl = document.querySelectorAll(".row")[rowIndex];
-    let wasCompared = new Array(5).fill(false);
-    wordArr.forEach((letter, index) => {
+    rowEvaluation.forEach((evaluation, index) => {
         setTimeout(() => {
-            const dataState = evaluate(letter, index, wasCompared);
             const tileEl = rowEl.childNodes[index];
-            tileEl.setAttribute("data-state", dataState);
+            tileEl.setAttribute("data-state", evaluation);
             animateCSS(tileEl, "flipInX");
         }, interval * index);
     });
@@ -225,43 +256,43 @@ function updateRowTilesState(wordArr, rowIndex, interval) {
 /**
  * Updates keyboard state.
  * Color keyboard keys based on last letter evaluation. 
- * @param {Array} wordArr - Array of letters
+ * @param {Array} wordArr - Array with word letters
+ * @param {Array} rowEvaluation - Array with word letters evaluation
  * @param {int} interval - Time in milliseconds that function will wait before execution
  * @return {boolean} True if there is a gameState, False otherwise
  */
-function updateKeyboardState(wordArr, interval) {
-    let wasCompared = new Array(5).fill(false);
+function updateKeyboardState(wordArr, rowEvaluation, interval) {
     setTimeout(() => {
         wordArr.forEach((letter, index) => {
-            const dataState = evaluate(letter, index, wasCompared);
             const keyEl = document.querySelector(`[data-key=${letter}]`);
-            keyEl.setAttribute("data-state", dataState)
+            keyEl.setAttribute("data-state", rowEvaluation[index]);
         });
     }, interval);
 }
 
 /**
- * Animates tiles on incorrect word submission attempt.
- * @param {void}
+ * Animates row tiles on incorrect word submission attempt.
+ * @param {int} rowIndex - Index of row to animate
  * @return {void}
  */
-function animateCssIncorrectAttempt() {
-    let rowEl = document.querySelectorAll(".row")[rowIndex];
-    currentWordArr.forEach((item, index) => {
+function animateCssIncorrectAttempt(rowIndex) {
+    const rowEl = document.querySelectorAll(".row")[rowIndex];
+    rowEl.childNodes.forEach((item, index) => {
         const tileEl = rowEl.childNodes[index];
         animateCSS(tileEl, "headShake");
     });
 }
 
 /**
- * Animates tiles on win condition.
+ * Animates row tiles on win condition.
+ * @param {int} rowIndex - Index of row to animate
  * @param {int} interval - Time in milliseconds that function will wait before execution
  * @return {void}
  */
-function animateCssWinGame(interval) {
+function animateCssWinGame(rowIndex, interval) {
     const rowEl = document.querySelectorAll(".row")[rowIndex];
     setTimeout(() => {
-        currentWordArr.forEach((item, index) => {
+        rowEl.childNodes.forEach((item, index) => {
             setTimeout(() => {
                 const tileEl = rowEl.childNodes[index];
                 animateCSS(tileEl, "bounce");
@@ -347,8 +378,10 @@ function handleNewGame() {
  */
 function saveGameState() {
     localStorage.setItem('gameState', JSON.stringify({
+        gameStatus: gameStatus,
         solution: solution,
         boardState: boardState,
+        evaluations: evaluations,
         rowIndex: rowIndex,
     }));
 }
@@ -361,8 +394,10 @@ function saveGameState() {
 function loadGameState() {
     let gameState = JSON.parse(localStorage.getItem("gameState"));
     if (gameState) {
+        gameStatus = gameState.gameStatus,
         solution = gameState.solution,
         boardState = gameState.boardState,
+        evaluations = gameState.evaluations,
         rowIndex = gameState.rowIndex
         rebuildUi(boardState);
     }
@@ -375,15 +410,15 @@ function loadGameState() {
  */
 function rebuildUi(boardState) {
     boardState.forEach((row, rowIndex) => {
-        let rowArr = row.split('');
-        if(rowArr.length === 0) {
+        let wordArr = row.split('');
+        if(wordArr.length === 0) {
             return;
         }
-        rowArr.forEach((letter, index) => {
+        wordArr.forEach((letter, index) => {
             const tileEl = document.querySelectorAll(".row")[rowIndex].childNodes[index];
             tileEl.textContent = letter;
         });
-        updateRowTilesState(rowArr, rowIndex, 0);
-        updateKeyboardState(rowArr, 0);
+        updateRowState(evaluations[rowIndex], rowIndex, 0);
+        updateKeyboardState(wordArr, evaluations[rowIndex], 0);
     });
 }
