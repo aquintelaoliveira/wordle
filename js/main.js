@@ -54,8 +54,8 @@ function handleBoardResize() {
     const w = Math.min(Math.floor(boardContainerEl.clientHeight * (5/6)), 350);
     const h = 6 * Math.floor(w/5);
     const boardEl = document.getElementById("board");
-    boardEl.style.width="".concat(w, "px")
-    boardEl.style.height="".concat(h, "px")
+    boardEl.style.width="".concat(w, "px");
+    boardEl.style.height="".concat(h, "px");
 }
 
 /**
@@ -211,6 +211,7 @@ function evaluate(wordArr) {
     let wordEvaluation = new Array(5).fill("absent");;
     let wasCompared = new Array(5).fill(false);
 
+    // first validation: correct letter positions
     wordArr.forEach((letter, index) => {
         const isCorrectPosition = letter === solution.charAt(index);
         if (isCorrectPosition) {
@@ -218,14 +219,20 @@ function evaluate(wordArr) {
             wordEvaluation[index] = "correct";
             return;
         }
-    
+    });
+
+    // secondond validation: present letter positions
+    wordArr.forEach((letter, index) => {
+        if (wordEvaluation[index] === 'correct') {
+            return;
+        }
         let letterIndexInSolution = solution.indexOf(letter);
         while (letterIndexInSolution !== -1) {
-            console.log("index", letterIndexInSolution, wasCompared[letterIndexInSolution])
+
             if (!wasCompared[letterIndexInSolution]) {
-                console.log("index", "entered", letterIndexInSolution)
                 wasCompared[letterIndexInSolution] = true;
                 wordEvaluation[index] = "present";
+                return;
             }
             letterIndexInSolution = solution.indexOf(letter, letterIndexInSolution + 1);
         }
@@ -265,7 +272,25 @@ function updateKeyboardState(wordArr, rowEvaluation, interval) {
     setTimeout(() => {
         wordArr.forEach((letter, index) => {
             const keyEl = document.querySelector(`[data-key=${letter}]`);
-            keyEl.setAttribute("data-state", rowEvaluation[index]);
+            const keyElState = keyEl.getAttribute("data-state");
+            switch (rowEvaluation[index]) {
+                case "absent":
+                    if (keyElState === null) {
+                        keyEl.setAttribute("data-state", "absent");
+                    }
+                    break;
+                case "present":
+                    if (keyElState === null || keyElState === "absent") {
+                        keyEl.setAttribute("data-state", "present");
+                    }
+                    break;
+                case "correct":
+                    if (keyElState !== "correct") {
+                        keyEl.setAttribute("data-state", "correct");
+                    }
+                default:
+                    keyEl.setAttribute("data-state", rowEvaluation[index])
+              }
         });
     }, interval);
 }
@@ -362,16 +387,6 @@ function hasGameState() {
 }
 
 /**
- * Creates a new game by refreshing page, and clean past game state from localStorage.
- * @param {void}
- * @return {void}
- */
-function handleNewGame() {
-    localStorage.clear();
-    document.location.reload(true);
-}
-
-/**
  * Saves current game state to localStorage.
  * @param {void}
  * @return {void}
@@ -421,4 +436,14 @@ function rebuildUi(boardState) {
         updateRowState(evaluations[rowIndex], rowIndex, 0);
         updateKeyboardState(wordArr, evaluations[rowIndex], 0);
     });
+}
+
+/**
+ * Creates a new game by refreshing page, and clean past game state from localStorage.
+ * @param {void}
+ * @return {void}
+ */
+ function handleNewGame() {
+    localStorage.clear();
+    document.location.reload(true);
 }
