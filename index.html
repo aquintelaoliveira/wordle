@@ -77,8 +77,218 @@
                 </button>
             </div>
         </div>
+        <settings-modal>
+            <style>
+                .overlay {
+                  display: none;
+                  position: absolute;
+                  width: 100%;
+                  height: 100%;
+                  top: 0;
+                  left: 0;
+                  justify-content: center;
+                  background-color: var(--color-background);
+                  animation: SlideIn 100ms linear;
+                  z-index: 2000;
+                }
+            
+                :host([open]) .overlay {
+                  display: flex;
+                }
+            
+                .content {
+                  position: relative;
+                  color: var(--color-tone-1);
+                  padding: 0 32px;
+                  max-width: var(--game-max-width);
+                  width: 100%;
+                  overflow-y: auto;
+                  height: 100%;
+                  display: flex;
+                  flex-direction: column;
+                }
+            
+                .content-container {
+                  height: 100%;
+                }
+            
+                .overlay.closing {
+                  animation: SlideOut 150ms linear;
+                }
+            
+                settings-header {
+                  display: flex;
+                  justify-content: center;
+                  align-items: center;
+                  position: relative;
+                }
+            
+                h1 {
+                  font-weight: 700;
+                  font-size: 16px;
+                  letter-spacing: 0.5px;
+                  text-transform: uppercase;
+                  text-align: center;
+                  margin-bottom: 10px;
+                }
+            
+                game-icon {
+                  position: absolute;
+                  right: 0;
+                  user-select: none;
+                  cursor: pointer;
+                }
+            
+                @media only screen and (min-device-width : 320px) and (max-device-width : 480px) {
+                  .content {
+                    max-width: 100%;
+                    padding: 0;
+                  }
+                  game-icon {
+                    padding: 0 16px;
+                  }
+                }
+            
+                @keyframes SlideIn {
+                  0% {
+                    transform: translateY(30px);
+                    opacity: 0;
+                  }
+                  100% {
+                    transform: translateY(0px);
+                    opacity: 1;
+                  }
+                }
+                @keyframes SlideOut {
+                  0% {
+                    transform: translateY(0px);
+                    opacity: 1;
+                  }
+                  90% {
+                    opacity: 0;
+                  }
+                  100% {
+                    opacity: 0;
+                    transform: translateY(60px);
+                  }
+                }
+              </style>
+                <div class="overlay">
+                    <div class="content">
+                    <settings-header>
+                        <h1>Settings</h1>
+                        <game-icon icon="close"></game-icon>
+                    </settings-header>
+                    <div class="content-container">
+                        <game-settings slot="content">
+                            <style>
+                                .setting {
+                                  display: flex;
+                                  justify-content: space-between;
+                                  align-items: center;
+                                  border-bottom: 1px solid var(--color-tone-4);
+                                  padding: 16px 0;
+                                }
+                              
+                                a, a:visited {
+                                  color: var(--color-tone-2);
+                                }
+                              
+                                .title {
+                                  font-size: 18px;
+                                }
+                                .text {
+                                  padding-right: 8px;
+                                }
+                                .description {
+                                  font-size: 12px;
+                                  color: var(--color-tone-2);
+                                }
+                              
+                                #footnote {
+                                  position: absolute;
+                                  bottom: 0;
+                                  left: 0;
+                                  right: 0;
+                                  padding: 16px;
+                                  color: var(--color-tone-2);
+                                  font-size: 12px;
+                                  text-align: right;
+                                  display: flex;
+                                  justify-content: space-between;
+                                  align-items: flex-end;
+                                }
+                              
+                                @media only screen and (min-device-width : 320px) and (max-device-width : 480px) {
+                                  .setting {
+                                    padding: 16px;
+                                  }
+                                }
+                              
+                                </style>
+                                <div class="sections">
+                                    <section>
+                                      <div class="setting">
+                                        <div class="text">
+                                          <div class="title">Hard Mode</div>
+                                          <div class="description">Any revealed hints must be used in subsequent guesses</div>
+                                        </div>
+                                        <div class="control">
+                                          <game-switch id="hard-mode" name="hard-mode" disabled=""></game-switch>
+                                        </div>
+                                      </div>
+                                      <div class="setting">
+                                        <div class="text">
+                                          <div class="title">Dark Theme</div>
+                                        </div>
+                                        <div class="control">
+                                          <game-switch id="dark-theme" name="dark-theme" checked=""></game-switch>
+                                        </div>
+                                      </div>
+                                      <div class="setting">
+                                        <div class="text">
+                                          <div class="title">High Contrast Mode</div>
+                                          <div class="description">For improved color vision</div>
+                                        </div>
+                                        <div class="control">
+                                          <game-switch id="color-blind-theme" name="color-blind-theme"></game-switch>
+                                        </div>
+                                      </div>
+                                    </section>
+                                
+                                    <section>
+                                      <div class="setting">
+                                        <div class="text">
+                                          <div class="title">Feedback</div>
+                                        </div>
+                                        <div class="control">
+                                          <a href="mailto:nytgames@nytimes.com?subject=Wordle%20Feedback&amp;body=%0D%0A%0D%0A%0A--%0ADevice%20summary%3A%0APage%3A%20%2Fgames%2Fwordle%0APlatform%3A%20Web%20(Desktop)%20%0ABrowser%3A%20Chrome%0AScreen%20Resolution%3A%201920%20x%201080%0AViewport%20Size%3A%201920%20x%20929%0ATimezone%3A%20UTC%2B0%0A%20%20" title="nytgames@nytimes.com">Email</a>
+                                        </div>
+                                      </div>
+                                      <div class="setting">
+                                        <div class="text">
+                                          <div class="title">Community</div>
+                                        </div>
+                                        <div class="control">
+                                          <a href="https://twitter.com/NYTimesWordplay" target="blank" title="@NYTimesWordplay">Twitter</a>
+                                        </div>
+                                      </div>
+                                      <div class="setting">
+                                      <div class="text">
+                                        <div class="title">Questions?</div>
+                                      </div>
+                                      <div class="control">
+                                        <a href="https://help.nytimes.com/hc/en-us/articles/360029050872-Word-Games-and-Logic-Puzzles#h_01FVGCB2Z00ZQMDMCYWBPWJNXB" target="blank">FAQ</a>
+                                      </div>
+                                    </div>
+                                    </section>
+                                  </div>
+                        </game-settings>
+                    </div>
+                    </div>
+                </div>
+        </settings-modal>
         <div class="toaster" id="game-toaster"></div>
-        <div class="toaster" id="system-toaster"></div>
     </div>
   </body>
 </html>

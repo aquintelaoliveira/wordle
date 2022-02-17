@@ -251,16 +251,6 @@ button[data-state='correct'] {
     --animate-duration: 0.50s;
 }
 
-game-icon {
-    position: fixed;
-    user-select: none;
-    cursor: pointer;
-}
-
-#system-toaster {
-    z-index: 2000;
-}
-
 #game-toaster {
     z-index: 1000;
 }

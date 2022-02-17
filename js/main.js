@@ -26,7 +26,8 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
     document.getElementById("settings-button")
-        .addEventListener("click", () => {
+        .addEventListener('click', async () => {
+            handleShare();
         });
 
     window.addEventListener("resize", () => {
@@ -198,17 +199,16 @@ function handleSubmitWord() {
 }
 
 /**
- * Evaluate submited letter agains't the solution letter from the same index position.
+ * Evaluate submited word letters agains't the solution letters from the same index position.
  * @param {string} letter - Letter to be validated
  * @param {int} index - Letter position in word array
- * @param {Array} wasCompared - Boolean array, where true values, means the solution letter has already been compared
  * @return {Array} - An array of strings with the word letters evaluation:
  *                   "absent"  if there letter doens't exist in solutuion,
  *                   "present" if the letter exists but it's on the wrong position,
  *                   "correct" if the letter exists and it's on the correct position
  */
 function evaluate(wordArr) {
-    let wordEvaluation = new Array(5).fill("absent");;
+    let wordEvaluation = new Array(5).fill("absent");
     let wasCompared = new Array(5).fill(false);
 
     // first validation: correct letter positions
@@ -296,16 +296,13 @@ function updateKeyboardState(wordArr, rowEvaluation, interval) {
 }
 
 /**
- * Animates row tiles on incorrect word submission attempt.
+ * Animates row on incorrect word submission attempt.
  * @param {int} rowIndex - Index of row to animate
  * @return {void}
  */
 function animateCssIncorrectAttempt(rowIndex) {
     const rowEl = document.querySelectorAll(".row")[rowIndex];
-    rowEl.childNodes.forEach((item, index) => {
-        const tileEl = rowEl.childNodes[index];
-        animateCSS(tileEl, "headShake");
-    });
+    animateCSS(rowEl, "headShake");
 }
 
 /**
@@ -357,7 +354,7 @@ const animateCSS = (element, animation, prefix = 'animate__') => {
 /**
  * Creates, displays and then removes toast element DOM.
  * Adds animation name to element class, and once it is done removes it
- * @param {string} - Element type (system or game)
+ * @param {string} - Element type (e.g. game)
  * @param {string} - Message to be displayed in toast element
  * @param {int} prefix - Time in milliseconds that function will wait before execution
  * @return {void}
@@ -425,7 +422,7 @@ function loadGameState() {
  */
 function rebuildUi(boardState) {
     boardState.forEach((row, rowIndex) => {
-        let wordArr = row.split('');
+        let wordArr = row.split("");
         if(wordArr.length === 0) {
             return;
         }
@@ -446,4 +443,42 @@ function rebuildUi(boardState) {
  function handleNewGame() {
     localStorage.clear();
     document.location.reload(true);
+}
+
+/**
+ * Share game result.
+ * @param {void}
+ * @return {void}
+ */
+function handleShare() {
+    if(gameStatus === GAME_STATUS.WIN) {
+        const data = {
+            title: "Wordle Clone",
+            text: "",
+            url: "https://aquintelaoliveira@github.io/wordle/",
+        }
+
+        evaluations.forEach(word => {
+            word.forEach(evaluation => {
+                switch (evaluation) {
+                    case "absent":
+                        data.text += "⬛";
+                        break;
+                    case "present":
+                        data.text += "🟨";
+                        break;
+                    case "correct":
+                        data.text += "🟩";
+                        break;
+                  }
+            });
+            text += "\n"
+        });
+    
+        try {
+            await navigator.share(data)
+        } catch(err) {
+            console.log(err);
+        }
+    }
 }
