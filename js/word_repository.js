@@ -22,7 +22,7 @@ export function getRandomWord() {
  * @return {boolean} - True if exist, false otherwise
  */
 export function hasWord(word) {
-    return words_en.includes(word) && words_en_aux.includes(word);
+    return words_en.includes(word) || words_en_aux.includes(word);
 }
 
 

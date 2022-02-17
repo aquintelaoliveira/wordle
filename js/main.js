@@ -25,7 +25,7 @@ document.addEventListener("DOMContentLoaded", () => {
             handleNewGame();
         });
 
-    document.getElementById("settings-button")
+    document.getElementById("statistics-button")
         .addEventListener('click', async () => {
             handleShare();
         });
@@ -450,7 +450,7 @@ function rebuildUi(boardState) {
  * @param {void}
  * @return {void}
  */
-function handleShare() {
+async function handleShare() {
     if(gameStatus === GAME_STATUS.WIN) {
         const data = {
             title: "Wordle Clone",
@@ -459,23 +459,26 @@ function handleShare() {
         }
 
         evaluations.forEach(word => {
-            word.forEach(evaluation => {
-                switch (evaluation) {
-                    case "absent":
-                        data.text += "⬛";
-                        break;
-                    case "present":
-                        data.text += "🟨";
-                        break;
-                    case "correct":
-                        data.text += "🟩";
-                        break;
-                  }
-            });
-            text += "\n"
+            if (word) {
+                word.forEach(evaluation => {
+                    switch (evaluation) {
+                        case "absent":
+                            data.text += "⬛";
+                            break;
+                        case "present":
+                            data.text += "🟨";
+                            break;
+                        case "correct":
+                            data.text += "🟩";
+                            break;
+                      }
+                });
+                data.text += "\n"
+            }
         });
     
         try {
+            console.log("yo")
             await navigator.share(data)
         } catch(err) {
             console.log(err);
