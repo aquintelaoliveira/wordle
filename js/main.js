@@ -5,7 +5,10 @@ const GAME_STATUS = Object.freeze({
     IN_PROGRESS: "IN_PROGRESS",
     WIN: "WIN",
     LOST: "LOST",
-  });
+});
+
+// win game extol
+const extol = ["Genius", "Magnificent", "Impressive", "Splendid", "Great", "Phew"];
 
 // game state to be saved
 var gameStatus = GAME_STATUS.IN_PROGRESS;
@@ -18,7 +21,18 @@ var rowIndex = 0;
 var currentTileChild = 0;
 var currentWordArr = [];
 
+document.addEventListener('keydown', (event) => {
+    handlePressedLetter(event.key);
+});
+
 document.addEventListener("DOMContentLoaded", () => {
+
+    createBoard();
+    indexVirtualKeyboardButtons();
+
+    window.addEventListener("resize", () => {
+        handleBoardResize();
+    })
 
     document.getElementById("new-game-button")
         .addEventListener("click", () => {
@@ -27,15 +41,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.getElementById("statistics-button")
         .addEventListener('click', async () => {
-            handleShare();
+            if (gameStatus === GAME_STATUS.WIN) {
+                handleShare();
+            }
         });
 
-    window.addEventListener("resize", () => {
-        handleBoardResize();
-    })
-    
-    createBoard();
-    indexKeyboardButtons();
+    document.getElementById("settings-button")
+        .addEventListener('click', () => {
+        });
 
     if(hasGameState()) {
         loadGameState();
@@ -61,6 +74,7 @@ function handleBoardResize() {
 
 /**
  * Create row and tiles elements on DOM.
+ * Resizes tile board.
  * @param {void}
  * @return {void}
  */
@@ -86,39 +100,48 @@ function createBoard() {
 }
 
 /**
- * Sets behavior for every key on keyboard.
+ * Sets behavior for every key on virtual keyboard.
  * @param {void}
  * @return {void}
  */
-function indexKeyboardButtons() {
-    const keys = document.querySelectorAll(".keyboard-row button");
-    for (let i = 0; i < keys.length; i++) {
-        keys[i].onclick = () => {
-            const letter = keys[i].getAttribute("data-key");
-
-            if (letter ==="enter") {
-                handleSubmitWord();
-                return;
-            }
-
-            if (letter ==="del") {
-                handleDeleteLetter();
-                return;
-            }
-
+function indexVirtualKeyboardButtons() {
+    const keysEl = document.querySelectorAll(".keyboard-row button");
+    for (let i = 0; i < keysEl.length; i++) {
+        keysEl[i].onclick = () => {
+            const letter = keysEl[i].getAttribute("data-key");
             handlePressedLetter(letter);
         }
     }
 }
 
 /**
- * Sets tile behavior when a letter key is pressed.
+ * Handles pressed letter action.
+ * @param {string} letter - Pressed letter key element
+ * @return {void}
+ */
+ function handlePressedLetter(letter) {
+
+        if (letter ==="Enter") {
+            handleSubmitWord();
+            return;
+        }
+
+        if (letter ==="Backspace") {
+            handleDeleteLetter();
+            return;
+        }
+
+        setTileBehavior(letter);
+}
+
+/**
+ * Sets tile behavior when a keyboard key is pressed.
  * Updates tile element textContent and data-state atribute.
  * Animates tile element.
  * @param {string} letter - Tile letter
  * @return {void}
  */
-function handlePressedLetter(letter) {
+function setTileBehavior(letter) {
     if (gameStatus === GAME_STATUS.IN_PROGRESS && currentWordArr.length < 5) {
         currentWordArr.push(letter);
         const currentTileEl = document.querySelectorAll(".row")[rowIndex].childNodes[currentTileChild];
@@ -163,16 +186,16 @@ function handleSubmitWord() {
     }
 
     if(currentWordArr.length !== 5) {
-        animateCssIncorrectAttempt(rowIndex);
-        handleToast("game", "Not enough letters", 500);
+        animateCssIncorrectAttempt(rowIndex)
+            .then(() => handleToast("game", "Not enough letters", 250));
         return;
     }
 
     const currentWord = currentWordArr.join('');
 
     if (!word_repository.hasWord(currentWord)) {
-        animateCssIncorrectAttempt(rowIndex);
-        handleToast("game", "Not in word list", 500);
+        animateCssIncorrectAttempt(rowIndex)
+            .then(() => handleToast("game", "Not in word list", 250));
         return;
     }
 
@@ -181,7 +204,8 @@ function handleSubmitWord() {
     updateKeyboardState(currentWordArr, wordEvaluation, 1500);
 
     if (currentWord === solution) {
-        animateCssWinGame(rowIndex, 2000);
+        animateCssWinGame(rowIndex, 2000)
+            .then(() => handleToast("game", extol[rowIndex], 500));
         gameStatus = GAME_STATUS.WIN;
     }
 
@@ -301,8 +325,11 @@ function updateKeyboardState(wordArr, rowEvaluation, interval) {
  * @return {void}
  */
 function animateCssIncorrectAttempt(rowIndex) {
-    const rowEl = document.querySelectorAll(".row")[rowIndex];
-    animateCSS(rowEl, "headShake");
+    return new Promise((resolve, reject) => {
+        const rowEl = document.querySelectorAll(".row")[rowIndex];
+        animateCSS(rowEl, "headShake")
+            .then(() => resolve())
+    });
 }
 
 /**
@@ -312,15 +339,17 @@ function animateCssIncorrectAttempt(rowIndex) {
  * @return {void}
  */
 function animateCssWinGame(rowIndex, interval) {
-    const rowEl = document.querySelectorAll(".row")[rowIndex];
-    setTimeout(() => {
-        rowEl.childNodes.forEach((item, index) => {
-            setTimeout(() => {
-                const tileEl = rowEl.childNodes[index];
-                animateCSS(tileEl, "bounce");
-            }, 100 * index);
-        });
-    }, interval);
+    return new Promise((resolve, reject) => {
+        const rowEl = document.querySelectorAll(".row")[rowIndex];
+        setTimeout(() => resolve(
+            rowEl.childNodes.forEach((item, index) => {
+                setTimeout(() => {
+                    const tileEl = rowEl.childNodes[index];
+                    animateCSS(tileEl, "bounce");
+                }, 100 * index);
+            })
+        ), interval)
+    });
 }
 
 /**
@@ -451,37 +480,34 @@ function rebuildUi(boardState) {
  * @return {void}
  */
 async function handleShare() {
-    if(gameStatus === GAME_STATUS.WIN) {
-        const data = {
-            title: "Wordle Clone",
-            text: "",
-            url: "https://aquintelaoliveira@github.io/wordle/",
-        }
+    const data = {
+        title: "Wordle Clone",
+        text: "",
+        url: "https://aquintelaoliveira@github.io/wordle/",
+    }
 
-        evaluations.forEach(word => {
-            if (word) {
-                word.forEach(evaluation => {
-                    switch (evaluation) {
-                        case "absent":
-                            data.text += "⬛";
-                            break;
-                        case "present":
-                            data.text += "🟨";
-                            break;
-                        case "correct":
-                            data.text += "🟩";
-                            break;
-                      }
-                });
-                data.text += "\n"
-            }
-        });
-    
-        try {
-            console.log("yo")
-            await navigator.share(data)
-        } catch(err) {
-            console.log(err);
+    evaluations.forEach(word => {
+        if (word) {
+            word.forEach(evaluation => {
+                switch (evaluation) {
+                    case "absent":
+                        data.text += "⬛";
+                        break;
+                    case "present":
+                        data.text += "🟨";
+                        break;
+                    case "correct":
+                        data.text += "🟩";
+                        break;
+                    }
+            });
+            data.text += "\n"
         }
+    });
+
+    try {
+        await navigator.share(data);
+    } catch(err) {
+        console.log(err);
     }
 }
